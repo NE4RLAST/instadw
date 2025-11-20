@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MonitoredUser } from '../types';
-import { Copy, Check, Terminal, Server, Shield, FileCode } from 'lucide-react';
+import { Copy, Check, Terminal, Server, Shield, FileCode, Github, Box, Save } from 'lucide-react';
 
 interface DeploymentGeneratorProps {
   users: MonitoredUser[];
@@ -12,6 +12,9 @@ const DeploymentGenerator: React.FC<DeploymentGeneratorProps> = ({ users, checkI
   const [igPass, setIgPass] = useState('');
   const [driveId, setDriveId] = useState('');
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  
+  // Checklist State
+  const [checkedSteps, setCheckedSteps] = useState<Record<string, boolean>>({});
 
   const activeUsers = users.filter(u => u.status === 'active').map(u => u.username).join(',');
 
@@ -19,6 +22,13 @@ const DeploymentGenerator: React.FC<DeploymentGeneratorProps> = ({ users, checkI
     navigator.clipboard.writeText(text);
     setCopiedSection(section);
     setTimeout(() => setCopiedSection(null), 2000);
+  };
+
+  const toggleStep = (stepId: string) => {
+    setCheckedSteps(prev => ({
+      ...prev,
+      [stepId]: !prev[stepId]
+    }));
   };
 
   const pythonCode = `import os
@@ -72,8 +82,9 @@ def main():
     # Giriş
     try:
         L.load_session_from_file(IG_USER, filename=f"{PERSISTENT_DIR}/session-{IG_USER}")
+        print("🔓 Session ile giriş yapıldı.")
     except FileNotFoundError:
-        print("🔑 Giriş yapılıyor...")
+        print("🔑 Şifre ile giriş yapılıyor...")
         try:
             L.login(IG_USER, IG_PASS)
             L.save_session_to_file(filename=f"{PERSISTENT_DIR}/session-{IG_USER}")
@@ -130,10 +141,9 @@ google-auth-oauthlib`;
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-white mb-2">VPS Deployment Generator</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">VPS Deployment Center</h1>
         <p className="text-slate-400">
-          Since we cannot scrape Instagram directly from the browser due to security restrictions, 
-          use this tool to generate the exact code needed for your Coolify VPS based on your settings.
+          Follow this guide to deploy your Instagram Archiver to your Hostinger VPS using Coolify.
         </p>
       </div>
 
@@ -181,86 +191,179 @@ google-auth-oauthlib`;
         </div>
       </div>
 
-      {/* File Generation */}
-      <div className="grid grid-cols-1 gap-8">
+      {/* Step-by-Step Guide */}
+      <div className="space-y-6">
         
-        {/* MAIN.PY */}
-        <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
-          <div className="bg-slate-800 px-4 py-2 flex justify-between items-center border-b border-slate-700">
-            <div className="flex items-center gap-2">
-              <FileCode size={16} className="text-yellow-400" />
-              <span className="font-mono text-sm font-bold text-slate-200">main.py</span>
-            </div>
+        {/* STEP 1: GITHUB */}
+        <div className={`border rounded-lg transition-colors duration-300 ${checkedSteps['step1'] ? 'bg-green-900/10 border-green-800' : 'bg-slate-800 border-slate-700'}`}>
+          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Github className="text-purple-400" size={20} />
+              Step 1: Prepare GitHub Repository
+            </h3>
             <button 
-              onClick={() => handleCopy(pythonCode, 'main')}
-              className="flex items-center gap-1 text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"
+              onClick={() => toggleStep('step1')}
+              className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${checkedSteps['step1'] ? 'bg-green-500 border-green-500 text-white' : 'border-slate-500 text-transparent hover:border-slate-300'}`}
             >
-              {copiedSection === 'main' ? <Check size={14} /> : <Copy size={14} />}
-              {copiedSection === 'main' ? 'Copied!' : 'Copy Code'}
+              <Check size={14} />
             </button>
           </div>
-          <pre className="p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed">
-            {pythonCode}
-          </pre>
+          <div className="p-6 space-y-6">
+            <p className="text-sm text-slate-300">Create a new <strong>Private Repository</strong> on GitHub and create these 3 files inside it.</p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* main.py */}
+              <div className="bg-slate-900 rounded border border-slate-800">
+                <div className="px-3 py-2 border-b border-slate-800 flex justify-between items-center">
+                   <span className="text-xs font-mono text-yellow-400">main.py</span>
+                   <button onClick={() => handleCopy(pythonCode, 'main')} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                     {copiedSection === 'main' ? <Check size={12}/> : <Copy size={12}/>} Copy
+                   </button>
+                </div>
+                <div className="p-2 overflow-x-auto h-32">
+                  <pre className="text-[10px] font-mono text-slate-500">{pythonCode}</pre>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* requirements.txt */}
+                <div className="bg-slate-900 rounded border border-slate-800">
+                  <div className="px-3 py-2 border-b border-slate-800 flex justify-between items-center">
+                    <span className="text-xs font-mono text-blue-400">requirements.txt</span>
+                    <button onClick={() => handleCopy(reqCode, 'req')} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                      {copiedSection === 'req' ? <Check size={12}/> : <Copy size={12}/>} Copy
+                    </button>
+                  </div>
+                  <div className="p-2 overflow-x-auto">
+                    <pre className="text-[10px] font-mono text-slate-500">{reqCode}</pre>
+                  </div>
+                </div>
+
+                {/* Dockerfile */}
+                <div className="bg-slate-900 rounded border border-slate-800">
+                  <div className="px-3 py-2 border-b border-slate-800 flex justify-between items-center">
+                    <span className="text-xs font-mono text-purple-400">Dockerfile</span>
+                    <button onClick={() => handleCopy(dockerCode, 'docker')} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                      {copiedSection === 'docker' ? <Check size={12}/> : <Copy size={12}/>} Copy
+                    </button>
+                  </div>
+                  <div className="p-2 overflow-x-auto">
+                    <pre className="text-[10px] font-mono text-slate-500">{dockerCode}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* REQUIREMENTS.TXT */}
-          <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-800 h-fit">
-            <div className="bg-slate-800 px-4 py-2 flex justify-between items-center border-b border-slate-700">
-              <div className="flex items-center gap-2">
-                <FileCode size={16} className="text-blue-400" />
-                <span className="font-mono text-sm font-bold text-slate-200">requirements.txt</span>
-              </div>
-              <button 
-                onClick={() => handleCopy(reqCode, 'req')}
-                className="flex items-center gap-1 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition-colors"
-              >
-                 {copiedSection === 'req' ? <Check size={14} /> : <Copy size={14} />}
-              </button>
-            </div>
-            <pre className="p-4 text-xs font-mono text-slate-300 overflow-x-auto">
-              {reqCode}
-            </pre>
+        {/* STEP 2: COOLIFY SETUP */}
+        <div className={`border rounded-lg transition-colors duration-300 ${checkedSteps['step2'] ? 'bg-green-900/10 border-green-800' : 'bg-slate-800 border-slate-700'}`}>
+          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Box className="text-blue-400" size={20} />
+              Step 2: Create Service in Coolify
+            </h3>
+            <button 
+              onClick={() => toggleStep('step2')}
+              className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${checkedSteps['step2'] ? 'bg-green-500 border-green-500 text-white' : 'border-slate-500 text-transparent hover:border-slate-300'}`}
+            >
+              <Check size={14} />
+            </button>
           </div>
-
-          {/* DOCKERFILE */}
-          <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-800 h-fit">
-            <div className="bg-slate-800 px-4 py-2 flex justify-between items-center border-b border-slate-700">
-              <div className="flex items-center gap-2">
-                <Server size={16} className="text-purple-400" />
-                <span className="font-mono text-sm font-bold text-slate-200">Dockerfile</span>
-              </div>
-               <button 
-                onClick={() => handleCopy(dockerCode, 'docker')}
-                className="flex items-center gap-1 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition-colors"
-              >
-                 {copiedSection === 'docker' ? <Check size={14} /> : <Copy size={14} />}
-              </button>
-            </div>
-            <pre className="p-4 text-xs font-mono text-slate-300 overflow-x-auto">
-              {dockerCode}
-            </pre>
+          <div className="p-6 text-sm text-slate-300 space-y-3">
+            <p>Go to your Coolify Dashboard and follow these clicks:</p>
+            <ol className="list-decimal list-inside space-y-2 ml-2">
+              <li>Click <strong className="text-white">Projects</strong> &rarr; Select or create a project.</li>
+              <li>Click <strong className="text-white">+ New</strong> &rarr; Select <strong className="text-white">Git Repository</strong>.</li>
+              <li>Select your GitHub account and the repository you created in Step 1.</li>
+              <li>In the configuration screen, ensure <strong className="text-white">Build Pack</strong> is set to <strong className="text-white">Dockerfile</strong>.</li>
+            </ol>
           </div>
         </div>
-        
-        {/* Instructions */}
-        <div className="bg-blue-900/20 border border-blue-500/30 p-6 rounded-lg">
-          <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
-            <Terminal size={20} /> Coolify Deployment Instructions
-          </h3>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-slate-300">
-            <li>Create a <strong>Private GitHub Repository</strong> and upload these 3 files.</li>
-            <li>In Coolify, create a new project from this repository.</li>
-            <li>Go to <strong>Environment Variables</strong> in Coolify and add:</li>
-            <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-slate-400 font-mono text-xs">
-              <li>GOOGLE_CREDS_JSON: (Paste contents of your credentials.json here)</li>
-              <li>IG_USER: {igUser || '...'}</li>
-              <li>IG_PASS: {igPass ? '******' : '...'}</li>
-            </ul>
-            <li className="mt-2">Go to <strong>Storage</strong> and add a volume mounting to <code className="bg-slate-900 px-1 rounded">/app/data</code>.</li>
-            <li>Click <strong>Deploy</strong>.</li>
-          </ol>
+
+        {/* STEP 3: CONFIGURATION */}
+        <div className={`border rounded-lg transition-colors duration-300 ${checkedSteps['step3'] ? 'bg-green-900/10 border-green-800' : 'bg-slate-800 border-slate-700'}`}>
+          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Shield className="text-emerald-400" size={20} />
+              Step 3: Environment Variables & Storage
+            </h3>
+            <button 
+              onClick={() => toggleStep('step3')}
+              className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${checkedSteps['step3'] ? 'bg-green-500 border-green-500 text-white' : 'border-slate-500 text-transparent hover:border-slate-300'}`}
+            >
+              <Check size={14} />
+            </button>
+          </div>
+          <div className="p-6 space-y-6">
+            <p className="text-sm text-slate-300">In Coolify project settings, find the <strong>Environment Variables</strong> tab and add these keys. <br/><span className="text-xs text-slate-500">(The values below are auto-filled from your inputs above)</span></p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center">
+                   <div>
+                     <p className="text-xs font-bold text-slate-500">IG_USER</p>
+                     <p className="text-sm font-mono text-white">{igUser || '...'}</p>
+                   </div>
+                   <Copy size={14} className="text-slate-600 cursor-pointer hover:text-white" onClick={() => handleCopy(igUser, 'iguser')}/>
+                </div>
+                <div className="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center">
+                   <div>
+                     <p className="text-xs font-bold text-slate-500">IG_PASS</p>
+                     <p className="text-sm font-mono text-white">{igPass ? '••••••' : '...'}</p>
+                   </div>
+                   <Copy size={14} className="text-slate-600 cursor-pointer hover:text-white" onClick={() => handleCopy(igPass, 'igpass')}/>
+                </div>
+                <div className="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center">
+                   <div>
+                     <p className="text-xs font-bold text-slate-500">TARGET_USERS</p>
+                     <p className="text-sm font-mono text-white truncate max-w-[150px]">{activeUsers || '...'}</p>
+                   </div>
+                   <Copy size={14} className="text-slate-600 cursor-pointer hover:text-white" onClick={() => handleCopy(activeUsers, 'targets')}/>
+                </div>
+                <div className="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center">
+                   <div>
+                     <p className="text-xs font-bold text-slate-500">DRIVE_FOLDER_ID</p>
+                     <p className="text-sm font-mono text-white truncate max-w-[150px]">{driveId || '...'}</p>
+                   </div>
+                   <Copy size={14} className="text-slate-600 cursor-pointer hover:text-white" onClick={() => handleCopy(driveId, 'drive')}/>
+                </div>
+                <div className="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center col-span-1 md:col-span-2">
+                   <div>
+                     <p className="text-xs font-bold text-slate-500">GOOGLE_CREDS_JSON</p>
+                     <p className="text-xs text-slate-400">Paste the full content of your credentials.json file here.</p>
+                   </div>
+                </div>
+            </div>
+
+            <div className="bg-blue-900/20 p-4 rounded border border-blue-500/30">
+                <h4 className="text-sm font-bold text-blue-300 mb-2">CRITICAL: Persistent Storage</h4>
+                <p className="text-xs text-slate-300 mb-2">Go to the <strong>Storage</strong> tab in Coolify and add a new volume:</p>
+                <div className="flex items-center gap-4 bg-slate-900 p-2 rounded border border-slate-800 w-fit">
+                    <span className="text-xs font-bold text-slate-500">Mount Path:</span>
+                    <code className="text-sm font-mono text-green-400">/app/data</code>
+                </div>
+            </div>
+          </div>
+        </div>
+
+         {/* STEP 4: DEPLOY */}
+         <div className={`border rounded-lg transition-colors duration-300 ${checkedSteps['step4'] ? 'bg-green-900/10 border-green-800' : 'bg-slate-800 border-slate-700'}`}>
+          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Save className="text-pink-400" size={20} />
+              Step 4: Deploy & Monitor
+            </h3>
+            <button 
+              onClick={() => toggleStep('step4')}
+              className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${checkedSteps['step4'] ? 'bg-green-500 border-green-500 text-white' : 'border-slate-500 text-transparent hover:border-slate-300'}`}
+            >
+              <Check size={14} />
+            </button>
+          </div>
+          <div className="p-6 text-sm text-slate-300">
+             Click the <strong>Deploy</strong> button in the top right of Coolify. <br/>
+             Once deployed, go to the <strong>Logs</strong> tab to watch your bot start working!
+          </div>
         </div>
 
       </div>
